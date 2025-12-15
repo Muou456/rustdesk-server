@@ -364,6 +364,7 @@ async fn handle_connection(
     ws: bool,
 ) {
     let ip = hbb_common::try_into_v4(addr).ip();
+    log::info!("addr: {}, key: {}, ws: {}", addr, key, ws);
     if !ws && ip.is_loopback() {
         let limiter = limiter.clone();
         tokio::spawn(async move {

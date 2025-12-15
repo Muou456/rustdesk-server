@@ -414,6 +414,7 @@ impl RendezvousServer {
                         result: register_pk_response::Result::OK.into(),
                         ..Default::default()
                     });
+                    log::info!("register-pk-response {}", msg_out.to_string());
                     socket.send(&msg_out, addr).await?
                 }
                 Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
@@ -481,6 +482,7 @@ impl RendezvousServer {
         ws: bool,
     ) -> bool {
         if let Ok(msg_in) = RendezvousMessage::parse_from_bytes(bytes) {
+            log::info!("tcp recv: {}", msg_in.to_string());
             match msg_in.union {
                 Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
                     // there maybe several attempt, so sink can be none
@@ -647,7 +649,7 @@ impl RendezvousServer {
     ) -> ResultType<()> {
         // relay local addrs of B to A
         let addr_a = AddrMangle::decode(&la.socket_addr);
-        log::debug!(
+        log::info!(
             "{} local addrs response to {:?} from {:?}",
             if socket.is_none() { "TCP" } else { "UDP" },
             &addr_a,
@@ -678,6 +680,8 @@ impl RendezvousServer {
         key: &str,
         ws: bool,
     ) -> ResultType<(RendezvousMessage, Option<SocketAddr>)> {
+        log::info!("addr: {:?}, ph: {:?}, key: {}, ws:{}", addr, ph.to_string(), key, ws);
+
         let mut ph = ph;
         if !key.is_empty() && ph.licence_key != key {
             log::warn!("Authentication failed from {} for peer {} - invalid key", addr, ph.id);
@@ -720,6 +724,7 @@ impl RendezvousServer {
             }
             let same_intranet: bool = !ws
                 && (peer_is_lan && is_lan || {
+                    log::info!("peer_is_lan: {:?} and is_lan:{:?} in same intranet", peer_is_lan, is_lan);
                     match (peer_addr, addr) {
                         (SocketAddr::V4(a), SocketAddr::V4(b)) => a.ip() == b.ip(),
                         (SocketAddr::V6(a), SocketAddr::V6(b)) => a.ip() == b.ip(),
@@ -728,7 +733,7 @@ impl RendezvousServer {
                 });
             let socket_addr = AddrMangle::encode(addr).into();
             if same_intranet {
-                log::debug!(
+                log::info!(
                     "Fetch local addr {:?} {:?} request from {:?}",
                     id,
                     peer_addr,
@@ -740,7 +745,7 @@ impl RendezvousServer {
                     ..Default::default()
                 });
             } else {
-                log::debug!(
+                log::info!(
                     "Punch hole {:?} {:?} request from {:?}",
                     id,
                     peer_addr,
@@ -1096,7 +1101,7 @@ impl RendezvousServer {
     }
 
     async fn handle_listener(&self, stream: TcpStream, addr: SocketAddr, key: &str, ws: bool) {
-        log::debug!("Tcp connection from {:?}, ws: {}", addr, ws);
+        log::info!("Tcp connection from {:?}, ws: {}", addr, ws);
         let mut rs = self.clone();
         let key = key.to_owned();
         tokio::spawn(async move {
